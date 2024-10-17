@@ -1,0 +1,19 @@
+React.js install
+npx create-react-app edu-bingo
+cd edu-bingo
+npm start
+
+Instalacija react-router-dom
+npm install react-router-dom
+
+
+Express.js install
+cd server
+npm install express cors body-parser
+
+
+KAKO POKRENUTI React
+
+(1) otvorite terminal
+(2) cd edu-bingo
+(3) npm start
