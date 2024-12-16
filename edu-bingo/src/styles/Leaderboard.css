@@ -1,0 +1,31 @@
+.leaderboard {
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    text-align: center;
+  }
+  
+
+  
+  .leaderboard-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 20px auto;
+    max-width: 400px;
+  }
+  
+  .leaderboard-list li {
+    display: flex;
+    justify-content: space-between;
+    background: #f1f1f1;
+    margin: 10px 0;
+    padding: 10px 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .loading, .error {
+    text-align: center;
+    color: #555;
+    font-size: 16px;
+  }
+  

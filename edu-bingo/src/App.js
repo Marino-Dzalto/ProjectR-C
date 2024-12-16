@@ -5,6 +5,8 @@ import Home from './components/Home';
 import AdminGame from './components/AdminGame';
 import Lobby from './components/Lobby';
 import GameBoard from './components/GameBoard';
+import AdminProfile from './components/AdminProfile';
+import Leaderboard from './components/Leaderboard';
 import './App.css';
 
 const App = () => {
@@ -73,6 +75,19 @@ const App = () => {
     //setPlayers([{ name: 'Player1' }, { name: 'Player2' }]);
     //setGameCode('123');
 
+    // AdminProfile
+    // Uncomment the following to test AdminProfile page
+    //setAdminData({ roomId: '123', roomName: 'Test Room' });
+
+    // Leaderboard
+    // Uncomment the following to test Leaderboard page
+    // setPlayers([
+    //   { name: 'Player1', score: 100 },
+    //   { name: 'Player2', score: 90 },
+    //   { name: 'Player3', score: 80 },
+    // ]);
+
+
     //Home
     //samo zakomentiraj sve
   }, []);
@@ -98,7 +113,7 @@ const App = () => {
         />
       ) : (
         // Pokaži index po defaultu
-        <Home onCreateGame={handleCreateGame} onJoinGame={handleJoinGame} />
+        <Leaderboard onCreateGame={handleCreateGame} onJoinGame={handleJoinGame} />
       )}
     </div>
   );
