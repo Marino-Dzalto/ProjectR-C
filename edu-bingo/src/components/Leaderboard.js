@@ -1,48 +1,60 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import '../styles/Leaderboard.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faMedal } from '@fortawesome/free-solid-svg-icons';
 
-const Leaderboard = () => {
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+const Leaderboard = ({ players, scores }) => {
+  const playerData = players.map((player, index) => ({
+    name: player.name || `Player ${index + 1}`,
+    score: scores[index] !== undefined ? scores[index] : 0, // Default to 0
+  }));
 
-  useEffect(() => {
-    const fetchLeaderboard = async () => {
-      try {
-        const response = await fetch('/api/leaderboard'); // zamijeni sa svojim API-em
-        if (!response.ok) {
-          throw new Error('Failed to fetch leaderboard data');
-        }
-        const data = await response.json();
-        setLeaderboard(data);
-        setLoading(false);
-      } catch (err) {
-        setError('Failed to load leaderboard.');
-        setLoading(false);
-      }
-    };
+  // Sortiranje igrača po scoreu
+  const sortedPlayers = [...playerData].sort((a, b) => b.score - a.score);
 
-    fetchLeaderboard();
-  }, []);
-
-  if (loading) return <div className="loading">Loading...</div>;
-  if (error) return <div className="error">{error}</div>;
+  const medalColors = ['#FFD700', '#C0C0C0', '#CD7F32']; // Gold, Silver, Bronze
 
   return (
-    <div className="leaderboard">
-      <h1>Leaderboard</h1>
-      {leaderboard.length === 0 ? (
-        <p>No players found.</p>
-      ) : (
-        <ol className="leaderboard-list">
-          {leaderboard.map((player, index) => (
-            <li key={index}>
-              <span>{player.name}</span>
-              <span>{player.score} points</span>
-            </li>
+    <div className="leaderboard-container">
+      <div className="clouds">
+        <div className="cloud"><i className="fas fa-cloud"></i></div>
+        <div className="cloud"><i className="fas fa-cloud"></i></div>
+        <div className="cloud"><i className="fas fa-cloud"></i></div>
+        <div className="cloud"><i className="fas fa-cloud"></i></div>
+        <div className="cloud"><i className="fas fa-cloud"></i></div>
+        <div className="cloud"><i className="fas fa-cloud"></i></div>
+        <div className="cloud"><i className="fas fa-cloud"></i></div>
+        <div className="cloud"><i className="fas fa-cloud"></i></div>
+        <div className="cloud"><i className="fas fa-cloud"></i></div>
+      </div>
+      <h1 className="leaderboard-title">Leaderboard</h1>
+      <table className="leaderboard-table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Player</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedPlayers.map((player, index) => (
+            <tr key={index} className="leaderboard-row">
+              <td>
+                {index < 3 ? (
+                  <FontAwesomeIcon
+                    icon={faMedal}
+                    style={{ color: medalColors[index], marginRight: '8px' }}
+                  />
+                ) : (
+                  index + 1
+                )}
+              </td>
+              <td>{player.name}</td>
+              <td>{player.score}</td>
+            </tr>
           ))}
-        </ol>
-      )}
+        </tbody>
+      </table>
     </div>
   );
 };

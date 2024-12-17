@@ -15,6 +15,9 @@ const App = () => {
   const [players, setPlayers] = useState([]);  // gdje ćemo storeat igrače
   const [isGameLocked, setIsGameLocked] = useState(false); // je li soba zaključana/otključana
   const [isGameStarted, setIsGameStarted] = useState(false); //je li igra započela ili smo još u lobbyu
+  const [showLeaderboard, setShowLeaderboard] = useState(false); //pokazivanje leaderboarda
+  const [scores, setScores] = useState([]);
+
 
   const handleCreateGame = async (data) => {
     try {
@@ -61,6 +64,30 @@ const App = () => {
     }
   };
 
+  // Fetch leaderboard data from the backend
+  const fetchLeaderboard = async (gameCode) => {
+    try {
+      const response = await fetch(`/api/leaderboard/${gameCode}`);
+      if (!response.ok) {
+        throw new Error(`Error fetching leaderboard: ${response.statusText}`);
+      }
+      const data = await response.json();
+
+      // Update players and scores
+      setPlayers(data.map((player) => ({ name: player.name })));
+      setScores(data.map((player) => player.score));
+      setShowLeaderboard(true);
+    } catch (error) {
+      console.error("Failed to fetch leaderboard:", error);
+    }
+  };
+
+  const handleEndGame = () => {
+    setIsGameStarted(false);
+    fetchLeaderboard(gameCode);
+  };
+
+
   useEffect(() => {
     // Da bismo testirali pojedinu stranicu samo uncommentaj pojedini dio
     // AdminGame
@@ -75,17 +102,15 @@ const App = () => {
     //setPlayers([{ name: 'Player1' }, { name: 'Player2' }]);
     //setGameCode('123');
 
-    // AdminProfile
-    // Uncomment the following to test AdminProfile page
-    //setAdminData({ roomId: '123', roomName: 'Test Room' });
 
     // Leaderboard
     // Uncomment the following to test Leaderboard page
-    // setPlayers([
-    //   { name: 'Player1', score: 100 },
-    //   { name: 'Player2', score: 90 },
-    //   { name: 'Player3', score: 80 },
-    // ]);
+    //  setPlayers([
+    //  { name: 'Player1' },
+    //  { name: 'Player2' },
+    //  { name: 'Player3' },]);
+    //setShowLeaderboard(true);
+    //setScores([100, 90, 80]);
 
 
     //Home
@@ -94,9 +119,10 @@ const App = () => {
 
   return (
     <div className="App">
-      {isGameStarted ? (
-        // Ako je igra krenula idemo na GameBoard
-        <GameBoard players={players} gameCode={gameCode} />
+      {showLeaderboard ? (
+        <Leaderboard players={players} scores={scores} />
+      ) : isGameStarted ? (
+        <GameBoard players={players} gameCode={gameCode} onEndGame={handleEndGame} />
       ) : gameCode ? (
         // Ako je izgeneriran code, ali igra još nije krenla onda smo još u Lobbyu
         <Lobby
@@ -113,7 +139,7 @@ const App = () => {
         />
       ) : (
         // Pokaži index po defaultu
-        <Leaderboard onCreateGame={handleCreateGame} onJoinGame={handleJoinGame} />
+        <Home onCreateGame={handleCreateGame} onJoinGame={handleJoinGame} />
       )}
     </div>
   );
