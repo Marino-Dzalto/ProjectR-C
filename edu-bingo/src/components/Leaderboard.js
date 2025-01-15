@@ -22,12 +22,9 @@ const Leaderboard = ({ players, scores }) => {
         <div className="cloud"><i className="fas fa-cloud"></i></div>
         <div className="cloud"><i className="fas fa-cloud"></i></div>
         <div className="cloud"><i className="fas fa-cloud"></i></div>
-        <div className="cloud"><i className="fas fa-cloud"></i></div>
-        <div className="cloud"><i className="fas fa-cloud"></i></div>
-        <div className="cloud"><i className="fas fa-cloud"></i></div>
-        <div className="cloud"><i className="fas fa-cloud"></i></div>
       </div>
       <h1 className="leaderboard-title">Leaderboard</h1>
+      <h2>IMAMO POBJEDNIKA!</h2>
       <table className="leaderboard-table">
         <thead>
           <tr>

@@ -3,16 +3,19 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css'; // Ovdje možete definirati globalne stilove
+import { BrowserRouter } from 'react-router-dom'; // Importiraj BrowserRouter
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter> {/* Obuhvati cijelu aplikaciju sa BrowserRouter */}
+      <App />
+    </BrowserRouter>
   </React.StrictMode>
 );
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
+// Ako želiš mjeriti performanse u aplikaciji, možeš proslijediti funkciju
+// za logiranje rezultata (npr. reportWebVitals(console.log))
 reportWebVitals();

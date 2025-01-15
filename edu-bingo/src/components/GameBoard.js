@@ -1,10 +1,11 @@
-import { faCheck } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React, { useEffect, useState } from 'react';
 import mickey from "../mickey.png";
 import minnie from "../minnie.png";
 import { useSocket } from '../SocketContext';
+import { useNavigate } from 'react-router-dom';  // Importiramo useNavigate za preusmjeravanje
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; // Provjeri da je ovo prisutno
 import '../styles/GameBoard.css';
+import { faCheck } from '@fortawesome/free-solid-svg-icons'; // Dodaj ovaj import
 
 const GameBoard = ({ questionData }) => {
   const [cards, setCards] = useState([]);
@@ -14,6 +15,7 @@ const GameBoard = ({ questionData }) => {
   const [score, setScore] = useState(0);
   const [scoreAnimation, setScoreAnimation] = useState(null);
   const socket = useSocket();
+  const navigate = useNavigate();  // Inicijaliziramo navigate
 
   //izgeneriramo 9 jedinstvenih brojeva
   const generateUniqueCardNumbers = (count) => {
@@ -60,15 +62,20 @@ const GameBoard = ({ questionData }) => {
 
       // samo privremeni listener da se printa pobjednik kad se dojavi tko je pobijedio
       socket.on('gameEnded', (data) => {
-        console.log(data.winner + " won!!")
-      })
+        console.log(data.winner + " won!!");
+        
+        // Prikazujemo poruku na ekranu kad igrač osvoji Bingo
+        // 4 sekunde nakon toga preusmjeravamo na Leaderboard
+        setTimeout(() => {
+          navigate('/leaderboard');  // Preusmjeravamo na leaderboard
+        }, 4000);
+      });
 
       return () => {
         socket.off('receiveNewQuestion', handleNewQuestion);
       };
     }
-  }, [cards, socket]);
-
+  }, [cards, socket, navigate]);  // Dodajemo navigate u zavisnosti
 
   // kada igrac skupi 18 bodova popunio je karticu i mora obavijestiti svih da je pobijedio, uz to i zavrsiti igru
   useEffect(() => {
@@ -79,24 +86,32 @@ const GameBoard = ({ questionData }) => {
 
   // kad igrač odgovori
   const handleSubmitAnswer = () => {
-    // console.log(answer);
-    // console.log(questionData)
+    // Provjeravamo ako je unesen "BINGOBINGO"
+    if (answer.toUpperCase() === "BINGOBINGO") {
+      setScore(18); // Dodajemo 18 bodova odmah
+      setScoreAnimation("+18"); // Prikazujemo animaciju
+  
+      // Čekaj 1 sekundu da animacija prođe, pa preusmjeri na Leaderboard
+      setTimeout(() => {
+        navigate('/leaderboard'); // Preusmjeravamo na leaderboard
+      }, 1000); // Pusti da animacija traje 1 sekundu
+      return; // Prekida ostatak funkcije jer je igrač već pobijedio
+    }
+  
     const card = cards[selectedCardIndex];
     if (!card) return;
-
+  
     const isCapsSensitive = questionData.topic_id === "56c3f768-8e47-456b-9d81-9a6eaf375940";
-
+  
     const isCorrect =
-    card.task.answer.type === 'written' &&
-      (isCapsSensitive
-        ? answer === card.task.answer.correct_answer // Case-sensitive comparison
-        : answer.toLowerCase() === card.task.answer.correct_answer.toLowerCase()) ||
-    (card.task.answer.type === 'numerical' && Number(answer) === card.task.answer.correct_answer) ||
-    (card.task.answer.type === 'multiple choice' && answer === card.task.answer.correct_answer);
-
-
+      (card.task.answer.type === 'written' &&
+        (isCapsSensitive
+          ? answer === card.task.answer.correct_answer // Case-sensitive comparison
+          : answer.toLowerCase() === card.task.answer.correct_answer.toLowerCase())) ||
+      (card.task.answer.type === 'numerical' && Number(answer) === card.task.answer.correct_answer) ||
+      (card.task.answer.type === 'multiple choice' && answer === card.task.answer.correct_answer);
+  
     if (isCorrect) {
-      // povecaj score prema difficultyu
       let points = 0;
       if (card.task.difficulty === 'high') {
         points = 3;
@@ -106,19 +121,16 @@ const GameBoard = ({ questionData }) => {
         points = 1;
       }
   
-      //animacija
       setScoreAnimation(`+${points}`);
       setTimeout(() => setScoreAnimation(null), 1000);
-      //povecanje scorea
       setScore((prevScore) => prevScore + points);
   
-      // oznacimo karticu kao completed
       setCards((prevCards) =>
         prevCards.map((c, i) =>
           i === selectedCardIndex ? { ...c, completed: true } : c
         )
       );
-
+  
       if (socket) {
         socket.emit('playerAnswered', { task_id: card.task_id, game_id: questionData.game_id, score: points });
       }
@@ -127,10 +139,11 @@ const GameBoard = ({ questionData }) => {
         socket.emit('changeQuestion', { task_id: card.task_id, difficulty: card.task.difficulty, game_id: questionData.game_id, topic_id: questionData.topic_id });
       }
     }
-
+  
     setAnswer('');
     setSelectedCardIndex(null);
   };
+  
 
   const closeModal = () => {
     setSelectedCardIndex(null);
@@ -140,7 +153,7 @@ const GameBoard = ({ questionData }) => {
   return (
     <div className="game-board">
       <div className="game-info">
-      < h2>
+        <h2>
           Score: {score}
           {scoreAnimation && <span className="score-animation">{scoreAnimation}</span>}
         </h2>
@@ -161,14 +174,13 @@ const GameBoard = ({ questionData }) => {
       </div>
 
       {/* Mickey and Minnie */}
-      <div className = "character">
+      <div className="character">
         <div className="minnie">
             <img src={minnie} alt="Minnie pic"/>
         </div>
         <div className="mickey">
             <img src={mickey} alt="Mickey pic"/>
         </div>
-        
       </div>
 
       {/* Modal za otvaranje prozora pitanja */}
