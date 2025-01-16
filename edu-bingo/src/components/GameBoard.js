@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import '../styles/GameBoard.css';
 import { faCheck } from '@fortawesome/free-solid-svg-icons'; 
 
-const GameBoard = ({ questionData }) => {
+const GameBoard = ({ questionData, onEndGame }) => {
   const [cards, setCards] = useState([]);
   const [randomNumber, setRandomNumber] = useState(null);
   const [selectedCardIndex, setSelectedCardIndex] = useState(null);
@@ -49,12 +49,22 @@ const GameBoard = ({ questionData }) => {
     setRandomNumber(Math.floor(Math.random() * 90) + 1);
   };
 
+  const handleGameEnded = (data) => {
+    console.log(data.winner + " won!!");
+    console.log('Game ended, attempting redirect via gameEnded event');
+    if (questionData && questionData.game_id) {
+      navigate(`/leaderboard/${questionData.game_id}`);
+    } else {
+      console.error('questionData or game_id is missing for navigation');
+    }
+    if (onEndGame) onEndGame();
+  };
+
   useEffect(() => {
     if (!socket) {
       console.error('Socket is not available');
       return;
     }
-
     const handleNewQuestion = (data) => {
       const new_q = data.new_question;
       const old_q = data.old_question;
@@ -69,18 +79,7 @@ const GameBoard = ({ questionData }) => {
       );
 
       setCards(updatedCards);
-    };
-
-    const handleGameEnded = (data) => {
-      console.log(data.winner + " won!!");
-      console.log('Game ended, attempting redirect via gameEnded event');
-      if (questionData && questionData.game_id) {
-        navigate(`/leaderboard/${questionData.game_id}`);
-      } else {
-        console.error('questionData or game_id is missing for navigation');
-      }
-    };
-
+    }
     // New listener for redirection
     const handleRedirect = () => {
       console.log('Redirect event received'); 
@@ -101,7 +100,7 @@ const GameBoard = ({ questionData }) => {
       socket.off('gameEnded', handleGameEnded);
       socket.off('redirectToNextPage', handleRedirect);
     };
-  }, [cards, socket, navigate, questionData]);
+  }, [cards, socket, navigate, questionData, onEndGame]);
 
   // When a player collects 18 points, victory is automatically awarded
   useEffect(() => {

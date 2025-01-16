@@ -67,7 +67,7 @@ const App = () => {
         throw new Error(`Error fetching leaderboard: ${response.statusText}`);
       }
       const data = await response.json();
-
+      console.log(data)
       setPlayers(data.map((player) => ({ name: player.name })));
       setScores(data.map((player) => player.score));
       setShowLeaderboard(true);

@@ -1,9 +1,10 @@
 import os
+from uuid import UUID
 import bcrypt
 import base64
 from datetime import datetime
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify
+from flask import Flask, abort, request, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from sqlalchemy.sql.expression import func
@@ -157,6 +158,11 @@ def lock_room(game_id):
 
 @app.get("/api/leaderboard/<string:game_id>")
 def leaderboard(game_id):
+    try:
+        UUID(game_id, version=4)
+    except ValueError:
+        abort(400, description="Invalid game_id format. Must be a valid UUID.")
+        
     score_sums = (
         db.session.query(Student.username, func.sum(Score.score).label("total_score"))
         .join(Score, Score.temp_user_id == Student.temp_student_id)
