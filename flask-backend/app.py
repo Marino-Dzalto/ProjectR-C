@@ -71,10 +71,11 @@ def create_game():
         start_time=datetime.now(),
         is_locked=False,
     )
-
+    
     db.session.add(new_game)
     db.session.commit()
-
+    print(new_game.game_id)
+    print(new_game.game_code)
     return {
         "game_id": str(new_game.game_id),
         "game_code": new_game.game_code,

@@ -62,7 +62,7 @@ const App = () => {
   // Fetchanje leaderboarda sa backenda
   const fetchLeaderboard = async (gameCode) => {
     try {
-      const response = await fetch(`/api/leaderboard/${gameCode}`);
+      const response = await fetch(`/api/leaderboard/${game_id}`); // ZASTOOOOOO
       if (!response.ok) {
         throw new Error(`Error fetching leaderboard: ${response.statusText}`);
       }
@@ -72,7 +72,7 @@ const App = () => {
       setScores(data.map((player) => player.score));
       setShowLeaderboard(true);
     } catch (error) {
-      console.error("Failed to fetch leaderboard:", error);
+      console.error("Failed to fetch leaderboard:", error); // gameID a ne gameCode 
     }
   };
 
