@@ -1,23 +1,26 @@
+import { faCheck, faMedal, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React, { useEffect, useState } from 'react';
 import mickey from "../mickey.png";
 import minnie from "../minnie.png";
 import { useSocket } from '../SocketContext';
-import { useNavigate } from 'react-router-dom'; 
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; 
 import '../styles/GameBoard.css';
-import { faCheck } from '@fortawesome/free-solid-svg-icons'; 
 
 const GameBoard = ({ questionData, onEndGame }) => {
   const [cards, setCards] = useState([]);
   const [randomNumber, setRandomNumber] = useState(null);
+  const [drawnNumbers, setDrawnNumbers] = useState(new Set());
+  const [cardNumbers, setCardNumbers] = useState([]);
   const [selectedCardIndex, setSelectedCardIndex] = useState(null);
   const [answer, setAnswer] = useState('');
   const [score, setScore] = useState(0);
   const [scoreAnimation, setScoreAnimation] = useState(null);
+  const [showEndGamePopup, setShowEndGamePopup] = useState(false);
+  const [showErrorOverlay, setShowErrorOverlay] = useState(false);
+  const [winner, setWinner] = useState(null);
   const socket = useSocket();
-  const navigate = useNavigate(); // Navigation for redirection
 
-  // Generate 9 unique numbers
+  //izgeneriramo 9 jedinstvenih brojeva
   const generateUniqueCardNumbers = (count) => {
     const uniqueNumbers = new Set();
     while (uniqueNumbers.size < count) {
@@ -28,10 +31,6 @@ const GameBoard = ({ questionData, onEndGame }) => {
   };
 
   useEffect(() => {
-    if (!questionData) {
-      console.error('questionData is undefined or null');
-      return;
-    }
     const uniqueCardNumbers = generateUniqueCardNumbers(9);
 
     const initialCards = questionData.questions.slice(0, 9).map((question, index) => ({
@@ -43,96 +42,92 @@ const GameBoard = ({ questionData, onEndGame }) => {
     }));
 
     setCards(initialCards);
+    setCardNumbers(uniqueCardNumbers);
   }, [questionData]);
 
   const generateRandomNumber = () => {
-    setRandomNumber(Math.floor(Math.random() * 90) + 1);
-  };
-
-  const handleGameEnded = (data) => {
-    console.log(data.winner + " won!!");
-    console.log('Game ended, attempting redirect via gameEnded event');
-    if (questionData && questionData.game_id) {
-      navigate(`/leaderboard/${questionData.game_id}`);
-    } else {
-      console.error('questionData or game_id is missing for navigation');
+    if (drawnNumbers.size >= 90) {
+      alert("Svi brojevi su izvučeni!");
+      return;
     }
-    if (onEndGame) onEndGame();
+    
+    let newNumber;
+    do {
+      newNumber = Math.floor(Math.random() * 90) + 1;
+    } while (drawnNumbers.has(newNumber));
+    if (!cardNumbers.includes(newNumber)) {
+      setDrawnNumbers((prev) => new Set(prev).add(newNumber));
+    }
+    setRandomNumber(newNumber);
   };
 
   useEffect(() => {
-    if (!socket) {
-      console.error('Socket is not available');
-      return;
+    if (socket) {
+      const handleNewQuestion = (data) => {
+        const new_q = data.new_question;
+        const old_q = data.old_question;
+
+        const updatedCards = cards.map((card) => 
+          card.task_id === old_q ? { ...card, task_id: new_q.task_id, task: new_q } : card
+        );
+
+        setCards(updatedCards);
+      };
+
+      const handleEndGame = ({ winner }) => {
+        setWinner(winner);
+        setShowEndGamePopup(true);
+        setTimeout(() => {
+          setShowEndGamePopup(false);
+          onEndGame();
+        }, 4000);
+      };
+
+      socket.on('receiveNewQuestion', handleNewQuestion);
+      socket.on('gameEnded', handleEndGame);
+
+      return () => {
+        socket.off('receiveNewQuestion', handleNewQuestion);
+        socket.off('gameEnded', handleEndGame);
+      };
     }
-    const handleNewQuestion = (data) => {
-      const new_q = data.new_question;
-      const old_q = data.old_question;
+  }, [cards, onEndGame, socket]);
 
-      if (!cards) {
-        console.error('cards state is undefined');
-        return;
-      }
-      
-      const updatedCards = cards.map((card) => 
-        card.task_id === old_q ? { ...card, task_id: new_q.task_id, task: new_q } : card
-      );
 
-      setCards(updatedCards);
-    }
-    // New listener for redirection
-    const handleRedirect = () => {
-      console.log('Redirect event received'); 
-      console.log('Attempting to navigate to leaderboard via redirect event');
-      if (questionData && questionData.game_id) {
-        navigate(`/leaderboard/${questionData.game_id}`);
-      } else {
-        console.error('questionData or game_id is missing for navigation');
-      }
-    };
-
-    socket.on('receiveNewQuestion', handleNewQuestion);
-    socket.on('gameEnded', handleGameEnded);
-    socket.on('redirectToNextPage', handleRedirect);
-
-    return () => {
-      socket.off('receiveNewQuestion', handleNewQuestion);
-      socket.off('gameEnded', handleGameEnded);
-      socket.off('redirectToNextPage', handleRedirect);
-    };
-  }, [cards, socket, navigate, questionData, onEndGame]);
-
-  // When a player collects 18 points, victory is automatically awarded
+  // kada igrac skupi 18 bodova popunio je karticu i mora obavijestiti svih da je pobijedio, uz to i zavrsiti igru
   useEffect(() => {
     if (score >= 18) {
-      console.log(`Player reached 18 points. Emitting 'endGame' event.`);
-      if (questionData && questionData.game_id) {
-        socket.emit('endGame', { room_id: questionData.game_id });
-      } else {
-        console.error('questionData or game_id is missing for emitting endGame');
-      }
+      socket.emit('endGame', { room_id: questionData.game_id });
     }
-  }, [questionData, score, socket]);
+  }, [questionData.game_id, score, socket]);
 
-  // When a player answers
+  // kad igrač odgovori
   const handleSubmitAnswer = () => {
+    // console.log(answer);
+    // console.log(questionData)
     const card = cards[selectedCardIndex];
-    if (!card) {
-      console.error('Selected card does not exist');
+    if (!card) return;
+
+    if (answer === "BINGOBINGO") {
+      setScore(18);
+      setAnswer('');
+      setSelectedCardIndex(null);
       return;
     }
 
-    const isCapsSensitive = questionData && questionData.topic_id === "56c3f768-8e47-456b-9d81-9a6eaf375940";
+    const isCapsSensitive = questionData.topic_id === "56c3f768-8e47-456b-9d81-9a6eaf375940";
 
     const isCorrect =
-      (card.task.answer.type === 'written' &&
-        (isCapsSensitive
-          ? answer === card.task.answer.correct_answer // Case-sensitive comparison
-          : answer.toLowerCase() === card.task.answer.correct_answer.toLowerCase())) ||
-      (card.task.answer.type === 'numerical' && Number(answer) === card.task.answer.correct_answer) ||
-      (card.task.answer.type === 'multiple choice' && answer === card.task.answer.correct_answer);
+    card.task.answer.type === 'written' &&
+      (isCapsSensitive
+        ? answer === card.task.answer.correct_answer // Case-sensitive comparison
+        : answer.toLowerCase() === card.task.answer.correct_answer.toLowerCase()) ||
+    (card.task.answer.type === 'numerical' && Number(answer) === card.task.answer.correct_answer) ||
+    (card.task.answer.type === 'multiple choice' && answer === card.task.answer.correct_answer);
+
 
     if (isCorrect) {
+      // povecaj score prema difficultyu
       let points = 0;
       if (card.task.difficulty === 'high') {
         points = 3;
@@ -141,43 +136,37 @@ const GameBoard = ({ questionData, onEndGame }) => {
       } else if (card.task.difficulty === 'easy') {
         points = 1;
       }
-
+  
+      //animacija
       setScoreAnimation(`+${points}`);
       setTimeout(() => setScoreAnimation(null), 1000);
-      setScore(prevScore => prevScore + points);
+      //povecanje scorea
+      setScore((prevScore) => prevScore + points);
 
-      setCards(prevCards =>
+      // dodaj broj s kartice u set potrosenih (izvucenih) brojeva
+      setDrawnNumbers((prev) => new Set(prev).add(card.number));
+  
+      // oznacimo karticu kao completed
+      setCards((prevCards) =>
         prevCards.map((c, i) =>
           i === selectedCardIndex ? { ...c, completed: true } : c
         )
       );
 
       if (socket) {
-        console.log('Emitting "playerAnswered" with score:', points);
         socket.emit('playerAnswered', { task_id: card.task_id, game_id: questionData.game_id, score: points });
       }
+      setSelectedCardIndex(null);
     } else {
       if (socket) {
-        console.log('Emitting "changeQuestion" for incorrect answer');
+        setShowErrorOverlay(true);
+        setTimeout(() => setShowErrorOverlay(false), 1000); // X će nestati nakon 1 sekunde
         socket.emit('changeQuestion', { task_id: card.task_id, difficulty: card.task.difficulty, game_id: questionData.game_id, topic_id: questionData.topic_id });
       }
     }
 
     setAnswer('');
-    setSelectedCardIndex(null);
-  };
-
-  // BINGOBINGO recognition
-  const handleBingo = () => {
-    if (answer.toUpperCase() === "XXX") {
-      setScore(18);
-      setScoreAnimation("+18");
-      setTimeout(() => setScoreAnimation(null), 1000);
-      if (socket) {
-        console.log('Bingo recognized, emitting "endGame"');
-        socket.emit('endGame', { room_id: questionData.game_id });
-      }
-    }
+    
   };
 
   const closeModal = () => {
@@ -188,76 +177,101 @@ const GameBoard = ({ questionData, onEndGame }) => {
   return (
     <div className="game-board">
       <div className="game-info">
-        <h2>
-          Score: {score}
-          {scoreAnimation && <span className="score-animation">{scoreAnimation}</span>}
-        </h2>
-        <button onClick={generateRandomNumber}>Novi broj</button>
-        {randomNumber && <p>Moj novi broj {randomNumber}</p>}
-      </div>
+        < h2>
+            Score: {score}
+            {scoreAnimation && <span className="score-animation">{scoreAnimation}</span>}
+          </h2>
+          <button onClick={generateRandomNumber}>Novi broj</button>
+          {randomNumber && <p>Moj novi broj {randomNumber}</p>}
+        </div>
 
-      <div className="card-grid">
-        {cards.map((card, index) => (
-          <div
-            key={card.id}
-            className={`card ${card.flipped ? 'flipped' : ''}`}
-            onClick={() => setSelectedCardIndex(index)}
-          >
-            <p>{card.completed ? <FontAwesomeIcon icon={faCheck} className="icon-check" /> : `Redni broj: ${card.number}`}</p>
+        <div className="card-grid">
+          {cards.map((card, index) => (
+            <div
+              key={card.id}
+              className={`card ${card.flipped ? 'flipped' : ''}`}
+              onClick={() => {
+                if (randomNumber === card.number) {
+                  setSelectedCardIndex(index);
+                }
+              }}
+            >
+              <p>{card.completed ? <FontAwesomeIcon icon={faCheck} className="icon-check" /> : `Redni broj: ${card.number}`}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Mickey and Minnie */}
+        <div className = "character">
+          <div className="minnie">
+              <img src={minnie} alt="Minnie pic"/>
           </div>
-        ))}
-      </div>
-
-      {/* Mickey and Minnie */}
-      <div className="character">
-        <div className="minnie">
-          <img src={minnie} alt="Minnie pic"/>
+          <div className="mickey">
+              <img src={mickey} alt="Mickey pic"/>
+          </div>
+          
         </div>
-        <div className="mickey">
-          <img src={mickey} alt="Mickey pic"/>
-        </div>
-      </div>
 
-      {/* Modal for opening question window */}
-      {selectedCardIndex !== null && (
-        <div className="modal-overlay active">
-          <div className="modal-content">
-            <span className="close-button" onClick={closeModal}>×</span>
-            <p>{cards[selectedCardIndex].task.question}</p>
-            {!cards[selectedCardIndex].completed && (
-              <>
-                {cards[selectedCardIndex].task.answer.type === 'written' && (
-                  <input
-                    type="text"
-                    value={answer}
-                    onChange={(e) => setAnswer(e.target.value)}
-                    onBlur={handleBingo}  // Check for BINGOBINGO when leaving input
-                  />
-                )}
-                {cards[selectedCardIndex].task.answer.type === 'numerical' && (
-                  <input
-                    type="number"
-                    value={answer}
-                    onChange={(e) => setAnswer(e.target.value)}
-                    onBlur={handleBingo}  // Check for BINGOBINGO when leaving input
-                  />
-                )}
-                {cards[selectedCardIndex].task.answer.type === 'multiple choice' && (
-                  <div className="options-container">
-                    {['a', 'b', 'c'].map((letter) => (
-                      <div
-                        key={letter}
-                        className={`option-box ${answer === letter ? 'selected' : ''}`}
-                        onClick={() => setAnswer(letter)}
-                      >
-                        {cards[selectedCardIndex].task.answer[`option_${letter}`]}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <button onClick={handleSubmitAnswer}>Potvrdi odgovor</button>
-              </>
-            )}
+          {/* Modal za javljanje pobjednika */}
+          {showEndGamePopup && (
+          <div className="modal-overlay active">
+            <div className="modal-content-winner">
+            <p>
+              <FontAwesomeIcon
+                icon={faMedal}
+                style={{ color: 'gold', marginRight: '8px' }}/> {winner} ima Bingo!!
+            </p>
+            </div>
+          </div>
+          )}
+
+          {/* Prikaz crvenog X-a kod pogrešnog odgovora */}
+          {showErrorOverlay && (
+            <div className="error-overlay">
+              <FontAwesomeIcon icon={faTimes} className="error-icon" />
+            </div>
+          )}
+
+          {/* Modal za otvaranje prozora pitanja */}
+          {selectedCardIndex !== null && (
+          <div className="modal-overlay active">
+            <div className="modal-content">
+              <span className="close-button" onClick={closeModal}>&times;</span>
+              <p>{cards[selectedCardIndex].task.question}</p>
+              {!cards[selectedCardIndex].completed && (
+                <>
+                  {cards[selectedCardIndex].task.answer.type === 'written' && (
+                    <input
+                      type="text"
+                      value={answer}
+                      onChange={(e) => setAnswer(e.target.value)}
+                    />
+                  )}
+                  {cards[selectedCardIndex].task.answer.type === 'numerical' && (
+                    <input
+                      type="number"
+                      value={answer}
+                      onChange={(e) => setAnswer(e.target.value)}
+                    />
+                  )}
+                  {cards[selectedCardIndex].task.answer.type === 'multiple choice' && (
+                    <div className="options-container">
+                      {['a', 'b', 'c'].map((letter) => (
+                        <div
+                          key={letter}
+                          className={`option-box ${
+                            answer === letter ? 'selected' : ''
+                          }`}
+                          onClick={() => setAnswer(letter)}
+                        >
+                          {cards[selectedCardIndex].task.answer[`option_${letter}`]}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <button onClick={handleSubmitAnswer}>Potvrdi odgovor</button>
+                </>
+              )}
           </div>
         </div>
       )}

@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { useSocket } from '../SocketContext';
 import '../styles/AdminGame.css';
 
-const AdminGame = ({ adminData }) => {
+const AdminGame = ({ adminData, onEndGame }) => {
   const [playerList, setPlayerList] = useState([]);
   const [subjects, setSubjects] = useState([]);// predmeti s backenda
   const [selectedSubject, setSelectedSubject] = useState('');// trenutacni predmet
@@ -65,12 +65,20 @@ const AdminGame = ({ adminData }) => {
       };
 
       socket.on("updatePlayers", handleUpdatePlayers);
+      socket.on('gameEnded', () => {
+        onEndGame();
+      })
 
       return () => {
         socket.off('updatePlayers');
+        socket.off('gameEnded');
       };
     }
+<<<<<<< HEAD
   }, [socket, adminData]);
+=======
+  }, [socket, adminData, onEndGame]);
+>>>>>>> a900960896cb441da98ffdccaa2a77dc50f2063e
 
    // Handle game creation nakon sta izaberemo temu i predmet
    const handleCreateGame = async () => {
