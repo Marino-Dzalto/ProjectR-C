@@ -25,9 +25,11 @@ const SignUp = ({ onClose }) => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+    e.preventDefault(); // Prevent page reload
 
+    setError(''); // Reset error message
+
+    // Check if passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -52,13 +54,13 @@ const SignUp = ({ onClose }) => {
         throw new Error(data.message || 'Failed to create account');
       }
 
-      setSuccess(true);
+      setSuccess(true); // Show success message
       setTimeout(() => {
-        onClose();
-      }, 2000);
+        onClose(); // Close the modal after success
+      }, 2000); // Close modal after 2 seconds
 
     } catch (err) {
-      setError(err.message);
+      setError(err.message); // Show error message
     }
   };
 
@@ -72,7 +74,7 @@ const SignUp = ({ onClose }) => {
         {success ? (
           <p className="success-message">Account created successfully!</p>
         ) : (
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit}>  {/* Ensuring form submits properly */}
             {error && <p className="error-message">{error}</p>}
             <input
               type="text"
@@ -106,7 +108,7 @@ const SignUp = ({ onClose }) => {
               onChange={handleChange}
               required
             />
-            <button type="submit" className="signup-submit-btn">
+            <button type="submit" className="signup-submit-btn">  {/* Ensure the button is type="submit" */}
               <i className="fas fa-user-plus"></i> Sign Up
             </button>
           </form>
