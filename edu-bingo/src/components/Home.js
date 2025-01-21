@@ -36,7 +36,7 @@ const SignUp = ({ onClose }) => {
     }
 
     try {
-      const response = await fetch('/api/create-student', {
+      const response = await fetch('/api/create-teacher', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
