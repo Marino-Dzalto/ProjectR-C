@@ -1,0 +1,97 @@
+/* Add these styles to src/styles/Home.css */
+.signup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .signup-modal {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+  }
+  
+  .close-btn {
+    float: right;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .error-message {
+    color: red;
+  }
+  
+  .success-message {
+    color: green;
+    font-weight: bold;
+  }
+  
+  .signup-submit-btn {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .signup-link-btn {
+    padding: 10px;
+    border: none;
+    background-color: #007BFF;
+    color: white;
+    cursor: pointer;
+  }
+  
+  .home {
+    font-family: Arial, sans-serif;
+    text-align: center;
+  }
+  
+  .clouds {
+    display: flex;
+    justify-content: space-evenly;
+    position: relative;
+    top: -50px;
+  }
+  
+  .cloud {
+    font-size: 2rem;
+  }
+  
+  .title {
+    font-size: 3rem;
+    margin-top: 20px;
+  }
+  
+  .field {
+    margin: 20px 0;
+  }
+  
+  .input, button {
+    margin: 5px;
+    padding: 10px;
+    font-size: 1rem;
+  }
+  
+  .character {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  
+  .character img {
+    width: 100px;
+    height: 100px;
+    margin: 10px;
+  }
+  
