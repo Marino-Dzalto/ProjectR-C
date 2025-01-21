@@ -1,10 +1,9 @@
 import os
-from uuid import UUID
 import bcrypt
 import base64
 from datetime import datetime
 from dotenv import load_dotenv
-from flask import Flask, abort, request, jsonify
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from sqlalchemy.sql.expression import func
@@ -71,11 +70,10 @@ def create_game():
         start_time=datetime.now(),
         is_locked=False,
     )
-    
+
     db.session.add(new_game)
     db.session.commit()
-    print(new_game.game_id)
-    print(new_game.game_code)
+
     return {
         "game_id": str(new_game.game_id),
         "game_code": new_game.game_code,
@@ -159,11 +157,6 @@ def lock_room(game_id):
 
 @app.get("/api/leaderboard/<string:game_id>")
 def leaderboard(game_id):
-    try:
-        UUID(game_id, version=4)
-    except ValueError:
-        abort(400, description="Invalid game_id format. Must be a valid UUID.")
-        
     score_sums = (
         db.session.query(Student.username, func.sum(Score.score).label("total_score"))
         .join(Score, Score.temp_user_id == Student.temp_student_id)
@@ -255,9 +248,7 @@ def handle_join_room(data):
 def handle_leave_game(data):
     room_id = data["room_id"]
 
-    # Check if room_id exists in questions
-    if room_id in questions:
-        del questions[room_id]
+    del questions[room_id]
 
     game = Game.query.filter_by(game_id=room_id).first()
 
@@ -279,7 +270,6 @@ def handle_start_game(data):
     topic_id = data["selectedTopic"]["topic_id"]
     clients = list(socketio.server.manager.rooms["/"].get(room_id, {}).keys())
 
-    # Check if room_id exists
     if room_id not in questions:
         questions[room_id] = {}
 
@@ -302,11 +292,6 @@ def handle_replace_question(data):
     difficulty = data["difficulty"]
     client = request.sid
 
-    # Check for existence of keys
-    if room_id not in questions or client not in questions[room_id]:
-        emit("error", {"message": f"Room {room_id} or Client {client} not found."}, room=room_id)
-        return
-
     new_question = get_new_question(topic_id, questions[room_id][client], difficulty)
 
     idx = questions[room_id][client].index(task_id)
@@ -326,27 +311,18 @@ def handle_player_answered(data):
     task_id = data["task_id"]
     score = data["score"]
 
-    # Get current player
     student = Student.query.filter_by(socket_id=player_sid).first()
 
     if student:
-        # Add score for the current task
         new_score = Score(
             game_id=game_id,
             temp_user_id=student.temp_student_id,
             task_id=task_id,
             score=score,
         )
+
         db.session.add(new_score)
         db.session.commit()
-
-        # Check total score of player
-        total_score = db.session.query(func.sum(Score.score)).filter_by(temp_user_id=student.temp_student_id).scalar()
-    
-        if total_score >= 18:
-            print(f"Player {student.username} has reached 18 points. Emitting redirect.")  # Debug log
-            emit("redirectToNextPage", {"message": "Game Over! Redirecting to leaderboard..."}, room=game_id)
-            return
 
 
 @socketio.on("updatePlayers")
